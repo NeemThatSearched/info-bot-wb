@@ -58,8 +58,7 @@ async def process_callback_button(callback_query: types.CallbackQuery, state: FS
     elif code == 'cashback':
         # Отправка фотографий
         media = [
-            InputMediaPhoto(open('media/photo1.jpeg', 'rb')),
-            InputMediaPhoto(open('media/photo2.jpeg', 'rb'))
+            InputMediaPhoto(open('media/photo1.jpeg', 'rb'))
         ]
         sent_media = await bot.send_media_group(chat_id=callback_query.from_user.id, media=media)
         
@@ -72,10 +71,13 @@ async def process_callback_button(callback_query: types.CallbackQuery, state: FS
         await CashbackStates.waiting_for_photos.set()
     elif code == 'delete_photos':
         user_id = callback_query.from_user.id
-        if user_id in photo_message_ids:
-            for message_id in photo_message_ids[user_id]:
-                await bot.delete_message(chat_id=user_id, message_id=message_id)
-            del photo_message_ids[user_id]
+        try:
+            if user_id in photo_message_ids:
+                for message_id in photo_message_ids[user_id]:
+                    await bot.delete_message(chat_id=user_id, message_id=message_id)
+                del photo_message_ids[user_id]
+        except Exception as e:
+            print(e)
 
         # Возврат в главное меню
         current_state = await state.get_state()
@@ -102,8 +104,7 @@ async def process_callback_button(callback_query: types.CallbackQuery, state: FS
 @dp.message_handler(state=CashbackStates.waiting_for_photos, content_types=types.ContentType.PHOTO)
 async def handle_photos(message: types.Message, state: FSMContext):
     largest_photo = message.photo[-1]  # Выбираем самое большое фото
-    await bot.send_photo(chat_id=CASHBACK_MANAGER, photo=largest_photo.file_id)
-
+    await bot.send_photo(chat_id=CASHBACK_MANAGER, photo=largest_photo.file_id, caption=f'@{message.from_user.username}')
     # Завершение состояния
     await state.finish()
     markup = InlineKeyboardMarkup()
